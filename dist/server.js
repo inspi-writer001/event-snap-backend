@@ -19,8 +19,8 @@ const app = (0, express_1.default)();
 app.get("/compare-faces", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // Hardcoded or dynamic image paths
     const scriptPath = path_1.default.join(__dirname, "../face_rec.py");
-    const selfiePath = path_1.default.join(__dirname, "selfie.jpg");
-    const eventPath = path_1.default.join(__dirname, "group_image.jpg");
+    const selfiePath = path_1.default.join(__dirname, "../emmy.jpg");
+    const eventPath = path_1.default.join(__dirname, "../group_image.jpg");
     try {
         const pythonPath = path_1.default.join(__dirname, "..", ".venv", "bin", "python3");
         const results = yield python_shell_1.PythonShell.run(scriptPath, {

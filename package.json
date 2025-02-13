@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "tsc && nodemon dist/server.ts",
-    "build": "bash scripts/build.sh",
+    "build": "bash script/build.sh",
     "start": "node dist/server.js"
   },
   "type": "commonjs",

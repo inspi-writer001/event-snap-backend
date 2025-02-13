@@ -7,8 +7,8 @@ const app = express();
 app.get("/compare-faces", async (req: Request, res: Response) => {
   // Hardcoded or dynamic image paths
   const scriptPath = path.join(__dirname, "../face_rec.py");
-  const selfiePath = path.join(__dirname, "selfie.jpg");
-  const eventPath = path.join(__dirname, "group_image.jpg");
+  const selfiePath = path.join(__dirname, "../emmy.jpg");
+  const eventPath = path.join(__dirname, "../group_image.jpg");
 
   try {
     const pythonPath = path.join(__dirname, "..", ".venv", "bin", "python3");

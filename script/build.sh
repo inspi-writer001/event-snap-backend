@@ -7,7 +7,7 @@ if [ ! -d ".venv" ]; then
 fi
 
 # 2) Install Python dependencies in .venv
-.venv/bin/python3 -m pip install --upgrade pip
+.venv/bin/python3 -m pip install --upgrade pip setuptools wheel
 .venv/bin/python3 -m pip install -r requirements.txt
 
 # 3) Transpile TypeScript
