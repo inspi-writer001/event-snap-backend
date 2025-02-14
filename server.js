@@ -1,11 +1,27 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
 import os from "os";
 import { PythonShell } from "python-shell";
+import { Agent } from "@fileverse/agents";
+import bodyParser from "body-parser";
+import {
+  PIMLICO_APIKey,
+  PINATA_GATEWAY,
+  PINATA_JWT,
+  PRIVATE_KEY
+} from "./globals.environment.js";
+import { fileURLToPath } from "url";
+import { uploadRouter } from "./routes/upload.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use(bodyParser.json({ limit: "10mb" }));
+
+app.use("/api", uploadRouter);
 
 // Python interpreter
 const PYTHON_PATH = path.join(__dirname, "..", ".venv", "bin", "python3");
@@ -25,10 +41,63 @@ const ALLOWED_EXTENSIONS = [
   ".webp"
 ];
 
-app.get("/compare-faces", async (req: Request, res: Response) => {
+export const agent = new Agent({
+  chain: "sepolia", // required - options: gnosis, sepolia
+  privateKey: PRIVATE_KEY, // optional if not provided, the agent will generate a random private key
+  pinataJWT: PINATA_JWT, // required - see how to get API keys below
+  pinataGateway: PINATA_GATEWAY, // required - see how to get API keys below
+  pimlicoAPIKey: PIMLICO_APIKey // required - see how to get API keys below,
+});
+
+agent.chain = {
+  // id: 10200,
+  // name: "sepolia",
+  // nativeCurrency: { name: "XDAI", symbol: "XDAI", decimals: 18 },
+  // rpcUrls: {
+  //   default: {
+  //     http: ["https://rpc.chiado.gnosis.gateway.fm"]
+  //   }
+  // },
+  // blockExplorers: {
+  //   default: {
+  //     name: "Etherscan",
+  //     url: "https://sepolia.etherscan.io",
+  //     apiUrl: "https://api-sepolia.etherscan.io/api"
+  //   }
+  // },
+  id: 11155111,
+  name: "sepolia",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: ["https://api.zan.top/eth-sepolia"] // or use an Infura/Alchemy endpoint
+    }
+  },
+  blockExplorers: {
+    default: {
+      name: "Etherscan",
+      url: "https://sepolia.etherscan.io",
+      apiUrl: "https://api-sepolia.etherscan.io/api"
+    }
+  },
+  contracts: {
+    multicall3: {
+      address: "0xca11bde05977b3631167028862be2a173976ca11",
+      blockCreated: 751532
+    },
+    ensRegistry: { address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" },
+    ensUniversalResolver: {
+      address: "0xc8Af999e38273D658BE1b921b88A9Ddf005769cC",
+      blockCreated: 5_317_080
+    }
+  },
+  testnet: true
+};
+
+app.get("/compare-faces", async (req, res) => {
   try {
-    const selfieUrl = req.query.selfie_url as string;
-    const eventUrl = req.query.image_url as string;
+    const selfieUrl = req.query.selfie_url;
+    const eventUrl = req.query.image_url;
 
     console.log([selfieUrl, eventUrl]);
 
@@ -44,16 +113,6 @@ app.get("/compare-faces", async (req: Request, res: Response) => {
         .status(400)
         .json({ error: "Invalid image extension. Must be png/jpg/heic, etc." });
     }
-
-    // 2) Validate the content type with a HEAD request
-    // const isSelfieValid = await isValidImageContentType(selfieUrl);
-    // const isEventValid = await isValidImageContentType(eventUrl);
-
-    // if (!isSelfieValid || !isEventValid) {
-    //   return res.status(400).json({
-    //     error: "Content-Type is not an image or HEAD request failed."
-    //   });
-    // }
 
     // 3) Download the images to temp files
     const tempSelfiePath = await downloadImageToTempFile(selfieUrl, "selfie");
@@ -95,40 +154,13 @@ app.get("/compare-faces", async (req: Request, res: Response) => {
 /**
  * Checks if the URL ends with a known valid image extension.
  */
-function isValidImageExtension(url: string): boolean {
+function isValidImageExtension(url) {
   const lowerUrl = url.toLowerCase();
   return ALLOWED_EXTENSIONS.some((ext) => lowerUrl.endsWith(ext));
 }
 
-/**
- * HEAD request to confirm the remote file's Content-Type is an image.
- */
-async function isValidImageContentType(url: string): Promise<boolean> {
-  try {
-    const response = await axios.get(url, {
-      method: "GET",
-      responseType: "stream",
-      maxContentLength: 0,
-      maxBodyLength: 0,
-      headers: { Range: "bytes=0-0" } // ask only for the first byte
-    });
-    const contentType = response.headers["content-type"];
-    // We only downloaded 1 byte, but we have the headers
-    return contentType && contentType.startsWith("image/");
-  } catch (err) {
-    console.error("Partial GET request failed:", err);
-    return false;
-  }
-}
-
-/**
- * Download the image from `imageUrl` and save it to a temp file.
- */
-async function downloadImageToTempFile(
-  imageUrl: string,
-  prefix: string
-): Promise<string> {
-  const response = await axios.get<ArrayBuffer>(imageUrl, {
+async function downloadImageToTempFile(imageUrl, prefix) {
+  const response = await axios.get(imageUrl, {
     responseType: "arraybuffer"
   });
   const tempFilePath = path.join(os.tmpdir(), `${prefix}-${Date.now()}.jpg`);
@@ -136,6 +168,7 @@ async function downloadImageToTempFile(
   return tempFilePath;
 }
 
-app.listen(3000, () => {
+app.listen(3000, async () => {
+  await agent.setupStorage("my-namespace");
   console.log("Server running on http://localhost:3000");
 });

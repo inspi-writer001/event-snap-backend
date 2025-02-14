@@ -10,5 +10,3 @@ fi
 .venv/bin/python3 -m pip install --upgrade pip setuptools wheel
 .venv/bin/python3 -m pip install -r requirements.txt
 
-# 3) Transpile TypeScript
-npx tsc
