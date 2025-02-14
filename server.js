@@ -13,20 +13,26 @@ import {
   PRIVATE_KEY
 } from "./globals.environment.js";
 import { fileURLToPath } from "url";
+import cors from "cors"
 import { uploadRouter } from "./routes/upload.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use(cors({
+  origin:"*"
+}))
+
+app.use(express.json())
 app.use(bodyParser.json({ limit: "10mb" }));
 
 app.use("/api", uploadRouter);
 
 // Python interpreter
-const PYTHON_PATH = path.join(__dirname, "..", ".venv", "bin", "python3");
+const PYTHON_PATH = path.join(__dirname, ".venv", "bin", "python3");
 // The face_recognition script
-const SCRIPT_PATH = path.join(__dirname, "..", "face_rec.py");
+const SCRIPT_PATH = path.join(__dirname, "face_rec.py");
 // Face match threshold
 const MATCH_THRESHOLD = 0.6;
 
