@@ -34,6 +34,7 @@ uploadRouter.post("/upload-image", upload.single("image"), async (req, res) => {
     }
 
     const filePath = req.file.path;
+    console.log("got here");
 
     // Optional: Convert the file to a base64 string if needed
     const imageBuffer = fs.readFileSync(filePath);
